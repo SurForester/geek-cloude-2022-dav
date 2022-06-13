@@ -1,9 +1,6 @@
 package com.geekbrains.cloud.server;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 import java.util.Arrays;
 import java.util.Objects;
@@ -15,12 +12,14 @@ public class ClientHandler implements Runnable {
     private Logger logger;
     private DataInputStream inpStream;
     private DataOutputStream outStream;
-    private String login;
+    private String login = "";
+    private boolean loopIsRunning = true;
 
     public String getLogin() {
         return login;
     }
 
+    // initialize client handler
     public ClientHandler(CloudServer server, Socket socket, Logger logger) throws IOException {
         try {
             this.server = server;
@@ -37,11 +36,12 @@ public class ClientHandler implements Runnable {
 
     @Override
     public void run() {
-        while (true) {
+        while (loopIsRunning) {
             readMessages();
         }
     }
 
+    // main thread for read messages
     private void readMessages() {
         try {
             String message = inpStream.readUTF();
@@ -55,9 +55,12 @@ public class ClientHandler implements Runnable {
             }
         } catch (IOException e) {
             logger.error("Error in command: " + e.getMessage() + "\n" + Arrays.toString(e.getStackTrace()));
+            // disconnect current client
+            loopIsRunning = false;
         }
     }
 
+    // extract command from message
     private String getCommand(String msg) {
         String[] arr = msg.split(" ");
         if (arr.length > 0) {
@@ -67,6 +70,7 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    // login with user & password
     private synchronized void userLogin(String msg) throws IOException {
         String[] arr = msg.split(" ");
         if (server.loginExists(arr[1])) {
@@ -84,8 +88,9 @@ public class ClientHandler implements Runnable {
         outStream.flush();
     }
 
+    // send to client from cloud storage
     private synchronized void sendCurrentList() throws IOException {
-        File dir = new File("D:\\Cloud\\CloudFiles\\");
+        File dir = new File(CommonConstants.filesPath);
         for (File file : Objects.requireNonNull(dir.listFiles())) {
             if (file.isFile())
                 outStream.writeUTF(file.getName());
@@ -94,12 +99,27 @@ public class ClientHandler implements Runnable {
         outStream.flush();
     }
 
+    // write text file from cloud client
     private synchronized void writeCloudFile() throws IOException {
-        String fileName = inpStream.readUTF();
+        String fileName =  CommonConstants.filesPath + inpStream.readUTF();
         String content = inpStream.readUTF();
         String res = "";
-
-        outStream.writeUTF(res);
+        try {
+            File file = new File(fileName);
+            //create the file.
+            if (file.createNewFile()) {
+                System.out.println("File is created!");
+            } else {
+                System.out.println("File already exists.");
+            }
+            //write content
+            FileWriter writer = new FileWriter(file);
+            writer.write(content);
+            writer.close();
+            outStream.writeUTF("File uploaded.");
+        } catch (IOException e) {
+            outStream.writeUTF("Error upload: " + e.getMessage() + "\n" + Arrays.toString(e.getStackTrace()));
+        }
         outStream.flush();
     }
 

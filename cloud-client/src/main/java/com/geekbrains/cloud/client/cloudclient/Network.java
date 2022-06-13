@@ -13,26 +13,34 @@ public class Network {
     private DataInputStream inpStream;
     private DataOutputStream outStream;
     private String resultString = "";
+    private boolean serverConnected;
     
     public Network(String server, int port) {
         this.server = server;
         this.port = port;
+        serverConnected = false;
         try {
+            // connect socket
             socket = new Socket(server, port);
+            // open streams
             inpStream = new DataInputStream(socket.getInputStream());
             outStream = new DataOutputStream(socket.getOutputStream());
+            serverConnected = true;
         } catch (IOException e) {
             resultString = e.getMessage();
         }
     }
 
+    // identify user in cloud
     public boolean connectCloud(String user, String pwd) {
         try {
             resultString = "";
+            // send request
             sendMessage("<Login> " + user + " " + pwd);
+            // gets respond
             String res = readMessage();
             String[] arr = res.split(" ");
-            if (arr[0].equals("email:")) {
+            if (arr[1].equals("email:")) { // if respond content "email:"
                 return true;
             } else {
                 resultString = res;
@@ -53,6 +61,7 @@ public class Network {
             outStream.flush();
         } catch (IOException e) {
             resultString = e.getMessage();
+            if (!socket.isConnected()) { serverConnected = false; }
         }
     }
 
@@ -60,7 +69,12 @@ public class Network {
         try {
             return inpStream.readUTF();
         } catch (IOException e) {
+            if (!socket.isConnected()) { serverConnected = false; }
             return  "Error read command: " + e.getMessage();
         }
+    }
+
+    public boolean isServerConnected() {
+        return serverConnected;
     }
 }

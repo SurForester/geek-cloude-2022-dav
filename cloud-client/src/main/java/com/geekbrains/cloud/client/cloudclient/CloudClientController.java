@@ -1,6 +1,5 @@
 package com.geekbrains.cloud.client.cloudclient;
 
-import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
@@ -48,6 +47,7 @@ public class CloudClientController implements Initializable {
     @FXML
     public Button buttonDownload;
 
+    // connect to cloud from user & pwd
     public void connectToServer(ActionEvent actionEvent) throws IOException {
         String user = textUser.getText();
         String pwd = textPassword.getText();
@@ -56,11 +56,13 @@ public class CloudClientController implements Initializable {
             textUser.setDisable(true);
             textPassword.setDisable(true);
             buttonConnect.setDisable(true);
+            buttonUpload.setDisable(false);
             getCloudList();
         }
         textStatus.setText(network.getStatus());
     }
 
+    // get list files from local path
     public void getLocalList() {
         listviewLocal.getItems().clear();
         File dir = new File("D:\\Cloud\\LocalFiles\\"); //labelLocalPath.getText());
@@ -70,12 +72,13 @@ public class CloudClientController implements Initializable {
         }
     }
 
+    // get list files from cloud
     public void getCloudList() throws IOException {
         network.sendMessage("<GetCurrentList>");
-        Platform.runLater(() -> listviewServer.getItems().clear());
+        listviewServer.getItems().clear();
         try {
             String message = network.readMessage();
-            while (message != "<EndFileList>") {
+            while (!message.equals("<EndFileList>")) {
                 String finalMessage = message;
                 listviewServer.getItems().add(finalMessage);
                 message = network.readMessage();
@@ -85,31 +88,38 @@ public class CloudClientController implements Initializable {
         }
     }
 
+    // initialise the class
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         try {
             network = new Network("localhost", 8181);
-            //File dir = new File(getClass().getClassLoader().getResource("localFiles").getFile());
             labelLocalPath.setText("D:\\Cloud\\LocalFiles\\");
             labelServerPath.setText("[root]");
+            listviewLocal.getItems().add("<Empty list>");
+            listviewServer.getItems().add("<Empty list>");
+            // define listview selector for local
             localSelectionModel = listviewLocal.getSelectionModel();
             localSelectionModel.selectedItemProperty().addListener(new ChangeListener<String>() {
                 public void changed(ObservableValue<? extends String> changed, String oldValue, String newValue) {
                     localSelected = newValue;
                 }
             });
+            // define listview selector for cloud
             cloudSelectionModel = listviewServer.getSelectionModel();
             cloudSelectionModel.selectedItemProperty().addListener(new ChangeListener<String>() {
                 public void changed(ObservableValue<? extends String> changed, String oldValue, String newValue) {
                     cloudSelected = newValue;
                 }
             });
+            buttonDownload.setDisable(true);
+            buttonUpload.setDisable(true);
             getLocalList();
         } catch (Exception e) {
             textStatus.setText(e.getMessage());
         }
     }
 
+    // upload text file
     public boolean uploadFile() throws IOException {
         boolean result = false;
         if (localSelected.isEmpty()) {
@@ -122,6 +132,9 @@ public class CloudClientController implements Initializable {
         String contentFile = new String(Files.readAllBytes(fileName));
         network.sendMessage(contentFile);
         String resultString = network.readMessage();
+        if (resultString.equals("File uploaded.")) {
+            getCloudList();
+        }
         return result;
     }
 }

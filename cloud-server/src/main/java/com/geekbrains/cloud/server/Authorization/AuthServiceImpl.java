@@ -1,15 +1,10 @@
 package com.geekbrains.cloud.server.Authorization;
 
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class AuthServiceImpl implements AuthService {
 
     private Logger logger;
-    //private final Map<String, UserIdent> users;
 
     public AuthServiceImpl(Logger logger) {
         this.logger = logger;
