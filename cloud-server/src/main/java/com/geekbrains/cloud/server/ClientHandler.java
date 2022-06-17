@@ -2,6 +2,7 @@ package com.geekbrains.cloud.server;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.file.*;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -101,11 +102,13 @@ public class ClientHandler implements Runnable {
 
     // write text file from cloud client
     private synchronized void writeCloudFile() throws IOException {
-        String fileName =  CommonConstants.filesPath + inpStream.readUTF();
+        String fileName = inpStream.readUTF();
         String content = inpStream.readUTF();
-        String res = "";
+        //String res = "";
         try {
-            File file = new File(fileName);
+            Files.writeString(Path.of(CommonConstants.filesPath, fileName),
+                    content, StandardOpenOption.CREATE);
+            /*File file = new File(fileName);
             //create the file.
             if (file.createNewFile()) {
                 System.out.println("File is created!");
@@ -115,7 +118,7 @@ public class ClientHandler implements Runnable {
             //write content
             FileWriter writer = new FileWriter(file);
             writer.write(content);
-            writer.close();
+            writer.close();*/
             outStream.writeUTF("File uploaded.");
         } catch (IOException e) {
             outStream.writeUTF("Error upload: " + e.getMessage() + "\n" + Arrays.toString(e.getStackTrace()));

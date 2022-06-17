@@ -65,7 +65,7 @@ public class CloudClientController implements Initializable {
     // get list files from local path
     public void getLocalList() {
         listviewLocal.getItems().clear();
-        File dir = new File("D:\\Cloud\\LocalFiles\\"); //labelLocalPath.getText());
+        File dir = new File(labelLocalPath.getText());
         for (File file : dir.listFiles()) {
             if (file.isFile())
                 listviewLocal.getItems().add(file.getName());
@@ -93,7 +93,8 @@ public class CloudClientController implements Initializable {
     public void initialize(URL url, ResourceBundle resourceBundle) {
         try {
             network = new Network("localhost", 8181);
-            labelLocalPath.setText("D:\\Cloud\\LocalFiles\\");
+            Path currentWorkingDir = Paths.get("").resolve("cloud-client").resolve("localFiles").toAbsolutePath();
+            labelLocalPath.setText(currentWorkingDir.normalize().toString());
             labelServerPath.setText("[root]");
             listviewLocal.getItems().add("<Empty list>");
             listviewServer.getItems().add("<Empty list>");
@@ -122,6 +123,7 @@ public class CloudClientController implements Initializable {
     // upload text file
     public boolean uploadFile() throws IOException {
         boolean result = false;
+        String selString = listviewLocal.getSelectionModel().getSelectedItem();
         if (localSelected.isEmpty()) {
             textStatus.setText("Выберите локальный файл для передачи.");
             return true;
