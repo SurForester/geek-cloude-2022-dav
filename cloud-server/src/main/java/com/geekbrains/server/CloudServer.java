@@ -1,7 +1,7 @@
-package com.geekbrains.cloud.server;
+package com.geekbrains.server;
 
-import com.geekbrains.cloud.server.Authorization.AuthService;
-import com.geekbrains.cloud.server.Authorization.AuthServiceImpl;
+import com.geekbrains.server.Authorization.AuthService;
+import com.geekbrains.server.Authorization.AuthServiceImpl;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

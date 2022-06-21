@@ -1,4 +1,4 @@
-package com.geekbrains.cloud.server.Authorization;
+package com.geekbrains.server.Authorization;
 
 public interface AuthService {
     void start();

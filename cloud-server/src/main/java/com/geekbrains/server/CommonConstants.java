@@ -1,4 +1,4 @@
-package com.geekbrains.cloud.server;
+package com.geekbrains.server;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;

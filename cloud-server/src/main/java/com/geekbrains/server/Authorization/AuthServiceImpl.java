@@ -1,4 +1,4 @@
-package com.geekbrains.cloud.server.Authorization;
+package com.geekbrains.server.Authorization;
 
 import org.apache.logging.log4j.Logger;
 
