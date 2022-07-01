@@ -1,4 +1,4 @@
-package com.geekbrains.server;
+package com.geekbrains.server.archive;
 
 import com.geekbrains.server.Authorization.AuthService;
 import com.geekbrains.server.Authorization.AuthServiceImpl;

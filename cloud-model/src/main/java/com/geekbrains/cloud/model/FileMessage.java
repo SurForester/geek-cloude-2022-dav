@@ -11,12 +11,16 @@ public class FileMessage implements CloudMessage {
 
     private final long size;
     private final byte[] data;
-    private final String name;
+    private String name;
 
     public FileMessage(Path path) throws IOException {
         size = Files.size(path);
         data = Files.readAllBytes(path);
         name = path.getFileName().toString();
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
 }
