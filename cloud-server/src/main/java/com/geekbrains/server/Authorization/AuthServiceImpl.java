@@ -1,10 +1,12 @@
 package com.geekbrains.server.Authorization;
 
+import com.geekbrains.server.DbConnect;
 import org.apache.logging.log4j.Logger;
 
 public class AuthServiceImpl implements AuthService {
 
-    private Logger logger;
+    private final Logger logger;
+    private DbConnect dbConnect;
 
     public AuthServiceImpl(Logger logger) {
         this.logger = logger;
@@ -14,7 +16,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void start() {
+        logger.trace("Db connect.");
         // db connect
+        dbConnect = new DbConnect();
         logger.trace("Auths started");
     }
 
@@ -36,6 +40,8 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void end() {
         // db disconnect
+        logger.trace("DB closed.");
+        dbConnect.closeDatabase();
         logger.trace("Auths stopped");
     }
 }

@@ -1,6 +1,9 @@
-package com.geekbrains.server;
+package com.geekbrains.server.Netty;
 
+import com.geekbrains.server.Netty.ByteBufToStringInboundHandler;
 import com.geekbrains.server.Netty.MainStringInboundHandler;
+import com.geekbrains.server.Netty.MainStringOutboundHandler;
+import com.geekbrains.server.Netty.StringToByteBufOutboundHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -8,12 +11,10 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.string.StringDecoder;
-import io.netty.handler.codec.string.StringEncoder;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class NettyEchoServer {
+public class NettyCorePipelineServer {
 
     public static void main(String[] args) {
 
@@ -28,8 +29,9 @@ public class NettyEchoServer {
                         @Override
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
                             socketChannel.pipeline().addLast(
-                                    new StringDecoder(),
-                                    new StringEncoder(),
+                                    new StringToByteBufOutboundHandler(),
+                                    new MainStringOutboundHandler(),
+                                    new ByteBufToStringInboundHandler(),
                                     new MainStringInboundHandler()
                             );
                         }
