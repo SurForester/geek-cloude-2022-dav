@@ -10,14 +10,14 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<VBox alignment="CENTER" prefHeight="545.0" prefWidth="693.0" spacing="20.0" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geekbrains.cloud.client.cloudclient.CloudClientController">
+<VBox alignment="CENTER" prefHeight="545.0" prefWidth="693.0" spacing="20.0" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geekbrains.cloud.client.CloudClientController">
     <padding>
-        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
     </padding>
     <AnchorPane prefHeight="505.0" prefWidth="697.0">
         <TextField fx:id="textStatus" editable="false" layoutX="14.0" layoutY="466.0" prefHeight="25.0" prefWidth="628.0" />
-        <ListView fx:id="listviewLocal" layoutX="14.0" layoutY="92.0" prefHeight="372.0" prefWidth="292.0" />
-        <ListView fx:id="listviewServer" layoutX="347.0" layoutY="92.0" prefHeight="372.0" prefWidth="292.0" />
+        <ListView onMouseClicked="#mouseLocalViewClick" fx:id="listviewLocal" layoutX="14.0" layoutY="92.0" prefHeight="372.0" prefWidth="292.0" />
+        <ListView onMouseClicked="#mouseServerViewClick" fx:id="listviewServer" layoutX="347.0" layoutY="92.0" prefHeight="372.0" prefWidth="292.0" />
         <Button fx:id="buttonUpload" layoutX="310.0" layoutY="186.0" mnemonicParsing="false" onAction="#uploadFile" prefHeight="25.0" prefWidth="36.0" text="&gt;&gt;" />
         <Label layoutX="14.0" layoutY="14.0" text="User name:">
             <font>
@@ -38,6 +38,6 @@
         <Label fx:id="labelServerPath" layoutX="368.0" layoutY="66.0" prefHeight="17.0" prefWidth="271.0" text="Label" />
         <Button fx:id="buttonServerStorage" layoutX="452.0" layoutY="37.0" mnemonicParsing="false" text="..." />
         <Button fx:id="buttonConnect" layoutX="579.0" layoutY="12.0" mnemonicParsing="false" onAction="#connectToServer" text="Connect" />
-        <Button fx:id="buttonDownload" layoutX="309.0" layoutY="240.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="36.0" text="&lt;&lt;" />
+        <Button onAction="#downloadFile" fx:id="buttonDownload" layoutX="309.0" layoutY="240.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="36.0" text="&lt;&lt;" />
     </AnchorPane>
 </VBox>

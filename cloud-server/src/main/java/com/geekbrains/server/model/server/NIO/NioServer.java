@@ -1,4 +1,4 @@
-package com.geekbrains.cloud.server.NIO;
+package com.geekbrains.server.model.server.NIO;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
