@@ -2,6 +2,7 @@ package com.geekbrains.server;
 
 import com.geekbrains.cloud.model.FileMessage;
 import com.geekbrains.cloud.model.ServerItemMessage;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -10,30 +11,43 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-
+@Slf4j
 public class DbConnect {
 
     // временное решение, до реализации регистрации
     private final String currUser = "User1";
-    private final String driverName = "org.sqlite.JDBC";
     private final String connectionString = "jdbc:sqlite:cloud-server\\cloud-db.db";
     private Connection connection = null;
     private Statement statement = null;
 
     public DbConnect() {
         try {
+            String driverName = "org.sqlite.JDBC";
             Class.forName(driverName);
         } catch (ClassNotFoundException e) {
-            System.out.println("Can't get class. No driver found");
-            e.printStackTrace();
+            log.error(e.getMessage());
             return;
         }
         try {
             connection = DriverManager.getConnection(connectionString);
             statement = connection.createStatement();
         } catch (SQLException e) {
-            System.out.println("Can't get connection. Incorrect URL");
-            e.printStackTrace();
+            log.error(e.getMessage());
+        }
+    }
+
+    public void reconnectDB() {
+        try {
+            if (statement != null) {
+                statement.close();
+            }
+            if (connection != null) {
+                connection.close();
+            }
+            connection = DriverManager.getConnection(connectionString);
+            statement = connection.createStatement();
+        } catch (SQLException e) {
+            log.error(e.getMessage());
         }
     }
 
@@ -139,9 +153,7 @@ public class DbConnect {
                 return "NO_CURR_DIR";
             }
             return "OK";
-        } catch (SQLException e) {
-            return e.getMessage();
-        } catch (IOException e) {
+        } catch (SQLException | IOException e) {
             return e.getMessage();
         }
     }
@@ -181,8 +193,7 @@ public class DbConnect {
                 connection.close();
             }
         } catch (SQLException e) {
-            System.out.println("Can't close connection");
-            e.printStackTrace();
+            log.error(e.getMessage());
         }
     }
 }

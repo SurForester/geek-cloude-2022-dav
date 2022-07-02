@@ -15,6 +15,7 @@ public class CloudFileHandler extends SimpleChannelInboundHandler<CloudMessage> 
             // base connect for User1
             dbConnect = new DbConnect();
         } catch (Exception e) {
+            log.error(e.getMessage());
         }
     }
 
