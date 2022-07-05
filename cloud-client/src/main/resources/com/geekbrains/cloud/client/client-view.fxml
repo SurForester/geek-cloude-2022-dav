@@ -3,41 +3,51 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<VBox alignment="CENTER" prefHeight="545.0" prefWidth="693.0" spacing="20.0" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geekbrains.cloud.client.CloudClientController">
+<VBox alignment="CENTER" prefHeight="601.0" prefWidth="752.0" spacing="20.0" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geekbrains.cloud.client.CloudClientController">
     <padding>
         <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
     </padding>
-    <AnchorPane prefHeight="545.0" prefWidth="683.0">
-        <TextField fx:id="textStatus" editable="false" layoutX="1.0" layoutY="509.0" prefHeight="25.0" prefWidth="681.0" />
-        <ListView fx:id="listviewLocal" layoutX="1.0" layoutY="92.0" onMouseClicked="#mouseLocalViewClick" prefHeight="416.0" prefWidth="314.0" />
-        <ListView fx:id="listviewServer" layoutX="368.0" layoutY="92.0" onMouseClicked="#mouseServerViewClick" prefHeight="416.0" prefWidth="314.0" />
-        <Button fx:id="buttonUpload" layoutX="324.0" layoutY="199.0" mnemonicParsing="false" onAction="#uploadFile" prefHeight="25.0" prefWidth="36.0" text="&gt;&gt;" />
+    <AnchorPane fx:id="ap" prefHeight="605.0" prefWidth="742.0">
+        <TextField fx:id="textStatus" editable="false" layoutY="565.0" prefHeight="25.0" prefWidth="742.0" />
+        <Button fx:id="buttonUpload" layoutX="353.0" layoutY="179.0" mnemonicParsing="false" onAction="#uploadFile" prefHeight="25.0" prefWidth="36.0" text="&gt;&gt;" />
         <Label layoutX="6.0" layoutY="6.0" text="User name:">
             <font>
                 <Font size="14.0" />
             </font>
         </Label>
-        <TextField fx:id="textUser" layoutX="85.0" layoutY="4.0" prefHeight="25.0" prefWidth="187.0" promptText="Input user name" text="user1" />
+        <TextField fx:id="textUser" layoutX="85.0" layoutY="4.0" prefHeight="25.0" prefWidth="187.0" promptText="Input user name" text="User1" />
         <Label layoutX="299.0" layoutY="7.0" text="Password">
             <font>
                 <Font size="14.0" />
             </font>
         </Label>
         <PasswordField fx:id="textPassword" layoutX="368.0" layoutY="4.0" prefHeight="25.0" prefWidth="193.0" promptText="Input password" text="pwd" />
-        <Label layoutX="6.0" layoutY="41.0" text="Local storage" />
-        <Label fx:id="labelLocalPath" layoutX="1.0" layoutY="58.0" prefHeight="25.0" prefWidth="314.0" text="Label" />
-        <Button fx:id="buttonLocalStorage" layoutX="85.0" layoutY="37.0" mnemonicParsing="false" text="..." />
-        <Label layoutX="368.0" layoutY="41.0" text="Server storage" />
-        <Label fx:id="labelServerPath" layoutX="368.0" layoutY="66.0" prefHeight="25.0" prefWidth="314.0" text="Label" />
-        <Button fx:id="buttonServerStorage" layoutX="452.0" layoutY="37.0" mnemonicParsing="false" text="..." />
-        <Button fx:id="buttonConnect" layoutX="582.0" layoutY="5.0" mnemonicParsing="false" onAction="#connectToServer" text="Connect" />
-        <Button fx:id="buttonDownload" layoutX="323.0" layoutY="253.0" mnemonicParsing="false" onAction="#downloadFile" prefHeight="25.0" prefWidth="36.0" text="&lt;&lt;" />
+        <Button fx:id="buttonLocalStorage" layoutX="2.0" layoutY="37.0" mnemonicParsing="false" onAction="#selectLocalStorage" prefHeight="46.0" prefWidth="24.0" text="..." />
+        <Button fx:id="buttonConnect" layoutX="389.0" layoutY="37.0" mnemonicParsing="false" onAction="#connectToServer" prefHeight="25.0" prefWidth="77.0" text="Connect" />
+        <Button fx:id="buttonDownload" layoutX="353.0" layoutY="238.0" mnemonicParsing="false" onAction="#downloadFile" prefHeight="25.0" prefWidth="36.0" text="&lt;&lt;" />
+        <TextArea fx:id="localPath" editable="false" layoutX="30.0" layoutY="37.0" prefHeight="46.0" prefWidth="320.0" wrapText="true" />
+        <TableView fx:id="serverTable" layoutX="392.0" layoutY="93.0" onMouseClicked="#clickServerList" prefHeight="469.0" prefWidth="346.0">
+            <columns>
+                <TableColumn id="name" fx:id="serverFileName" editable="false" prefWidth="211.0" text="Наименование" />
+                <TableColumn id="type" fx:id="serverFileType" editable="false" prefWidth="36.0" text="Тип" />
+                <TableColumn id="size" fx:id="serverFileSize" editable="false" text="Размер" />
+            </columns>
+        </TableView>
+        <TableView fx:id="localTable" layoutX="3.0" layoutY="93.0" onMouseClicked="#clickLocalList" prefHeight="469.0" prefWidth="346.0">
+            <columns>
+                <TableColumn id="name" fx:id="localFileName" editable="false" prefWidth="211.0" text="Наименование" />
+                <TableColumn id="type" fx:id="localFileType" editable="false" prefWidth="36.0" text="Тип" />
+                <TableColumn id="size" fx:id="localFileSize" editable="false" text="Размер" />
+            </columns>
+        </TableView>
     </AnchorPane>
 </VBox>

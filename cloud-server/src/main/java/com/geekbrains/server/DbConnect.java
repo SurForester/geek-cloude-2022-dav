@@ -1,7 +1,7 @@
 package com.geekbrains.server;
 
 import com.geekbrains.cloud.model.FileMessage;
-import com.geekbrains.cloud.model.ServerItemMessage;
+import com.geekbrains.cloud.model.TableList;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -15,7 +15,7 @@ import java.util.List;
 public class DbConnect {
 
     // временное решение, до реализации регистрации
-    private final String currUser = "User1";
+    //private final String currUser = "User1";
     private final String connectionString = "jdbc:sqlite:cloud-server\\cloud-db.db";
     private Connection connection = null;
     private Statement statement = null;
@@ -51,50 +51,49 @@ public class DbConnect {
         }
     }
 
-    public List<ServerItemMessage> getServerList() throws SQLException {
-        List<ServerItemMessage> files = new ArrayList<>();
-        String sql = "select curr_id from users where login = '" + currUser + "'";
+    public List<TableList> getServerList(String userId) throws SQLException {
+        List<TableList> files = new ArrayList<>();
+        String sql = "select id from directories where user_id = " + userId + " and parent_id is null";
         ResultSet resultSet = statement.executeQuery(sql);
+        long rootDir = 0;
+        while (resultSet.next()) {
+            rootDir = resultSet.getLong("id");
+        }
+        resultSet.close();
+        sql = "select curr_dir from users where id = " + userId;
+        resultSet = statement.executeQuery(sql);
         long currDir = 0;
         while (resultSet.next()) {
-            currDir = resultSet.getLong("curr_id");
+            currDir = resultSet.getLong("curr_dir");
         }
-        if (currDir > 0) {
-            // is the root?
-            resultSet = statement.executeQuery("select parent_id from directories where id = " + currDir);
-            while (resultSet.next()) {
-                long parentDir = resultSet.getLong(0);
-                if (parentDir > 0) {
-                    files.add(new ServerItemMessage("..", "dir", 0));
-                }
-            }
-            // load child dirs
-            resultSet = statement.executeQuery("select name from directories where parent_id = " + currDir);
-            while (resultSet.next()) {
-                files.add(new ServerItemMessage(resultSet.getString(0), "dir", 0));
-            }
-            // load files on current dir
-            resultSet = statement.executeQuery("select name from files where dir_id = " + currDir);
-            while (resultSet.next()) {
-                files.add(new ServerItemMessage(resultSet.getString(0), "file", 0));
-            }
-        } else {
-            files.add(new ServerItemMessage("<no files>", "dir", 0));
+        resultSet.close();
+        if (currDir != rootDir) {
+            files.add(new TableList("..", "upDir", 0));
+        }
+        // load child dirs
+        resultSet = statement.executeQuery("select name from directories where parent_id = " + currDir);
+        while (resultSet.next()) {
+            files.add(new TableList(resultSet.getString(1), "dir", 0));
+        }
+        // load files on current dir
+        resultSet = statement.executeQuery("select name from files where dir_id = " + currDir);
+        while (resultSet.next()) {
+            files.add(new TableList(resultSet.getString(1), "file", 0));
         }
         return files;
     }
 
-    public String pathIn(String path) {
+    public String pathIn(String userID, String path) {
         try {
             String sql = "select id from directories where parent_id = " +
-                    "(select curr_id from users where login = '" + currUser + "') and " +
+                    "(select curr_dir from users where id = " + userID + ") and " +
                     "name = '" + path + "'";
             ResultSet resultSet = statement.executeQuery(sql);
             long currDir = 0;
             while (resultSet.next()) {
-                currDir = resultSet.getLong(0);
+                currDir = resultSet.getLong(1);
             }
-            sql = "update users set curr_dir = " + currDir + " where login = '" + currUser + "'";
+            sql = "update users set curr_dir = " + currDir + " where id = " + userID;
             statement.executeUpdate(sql);
             return "OK";
         } catch (SQLException e) {
@@ -102,16 +101,16 @@ public class DbConnect {
         }
     }
 
-    public String pathUp() {
+    public String pathUp(String userID) {
         try {
             String sql = "select parent_id from directories where id = " +
-                    "(select curr_id from users where login = '" + currUser + "')";
+                    "(select curr_dir from users where id = " + userID + ")";
             ResultSet resultSet = statement.executeQuery(sql);
             long currDir = 0;
             while (resultSet.next()) {
-                currDir = resultSet.getLong(0);
+                currDir = resultSet.getLong(1);
             }
-            sql = "update users set curr_dir = " + currDir + " where login = '" + currUser + "'";
+            sql = "update users set curr_dir = " + currDir + " where id = " + userID;
             statement.executeUpdate(sql);
             return "OK";
         } catch (SQLException e) {
@@ -119,23 +118,23 @@ public class DbConnect {
         }
     }
 
-    public FileMessage getFile(String name) throws IOException, SQLException {
+    public FileMessage getFile(String name, String userID) throws IOException, SQLException {
         ResultSet resultSet = statement.executeQuery("select id from files where dir_id = " +
-                "(select curr_id from users where login = '" + currUser + "') and " +
+                "(select curr_dir from users where id = '" + userID + "') and " +
                 "name = '" + name + "'");
-        FileMessage file = new FileMessage(Path.of("server_files")
-                .resolve(resultSet.getLong(0) + ".file"));
+        FileMessage file = new FileMessage(userID, Path.of("server_files")
+                .resolve(resultSet.getLong(1) + ".file"));
         file.setName(name);
         return file;
     }
 
     public String writeFile(FileMessage fileMessage) {
         try {
-            String sql = "select curr_id from users where login = '" + currUser + "'";
+            String sql = "select curr_dir from users where id = " + fileMessage.getUserID();
             ResultSet resultSet = statement.executeQuery(sql);
             long currDir = 0;
             while (resultSet.next()) {
-                currDir = resultSet.getLong("curr_id");
+                currDir = resultSet.getLong("curr_dir");
             }
             if (currDir > 0) {
                 sql = "insert into files(dir_id, name, shared) values (" +
@@ -146,7 +145,7 @@ public class DbConnect {
                 resultSet = statement.executeQuery(sql);
                 long fileNum = 0;
                 while (resultSet.next()) {
-                    fileNum = resultSet.getLong(0);
+                    fileNum = resultSet.getLong(1);
                 }
                 Files.write(Path.of("server_files").resolve(fileNum + ".file"), fileMessage.getData());
             } else {
@@ -162,9 +161,11 @@ public class DbConnect {
         try {
             String sql = "select * from users where LOGIN = '" + user + "'";
             ResultSet resultSet = statement.executeQuery(sql);
+            String id = "";
             String login = "";
             String password = "";
             while (resultSet.next()) {
+                id = resultSet.getString("ID");
                 login = resultSet.getString("LOGIN");
                 password = resultSet.getString("PWD");
             }
@@ -174,7 +175,7 @@ public class DbConnect {
             if (!password.equals(pwd)) {
                 return "WRONG_PWD";
             }
-            return "OK";
+            return "OK " + id;
         } catch (SQLException e) {
             return e.getMessage();
         }
