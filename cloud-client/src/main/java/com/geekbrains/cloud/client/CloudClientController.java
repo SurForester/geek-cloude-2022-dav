@@ -1,11 +1,21 @@
 package com.geekbrains.cloud.client;
 
 import com.geekbrains.cloud.model.*;
-import javafx.event.ActionEvent;
+import javafx.application.Platform;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.Stage;
+import javafx.util.Pair;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,84 +25,131 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 public class CloudClientController implements Initializable {
-
+    @FXML
+    public Button buttonMakeDir;
+    @FXML
+    public Button buttonRenameDir;
+    @FXML
+    public Button buttonRenameFile;
+    @FXML
+    public Button buttonDeleteDir;
+    @FXML
+    public Button buttonDeleteFile;
+    @FXML
+    public Button buttonRegister;
+    private String user, pwd;
+    public AnchorPane ap;
+    private String userID;
+    @FXML
+    public TableView<TableList> serverTable;
+    public TableView<TableList> localTable;
+    //private ObservableList<TableList> serverTableList = FXCollections.observableArrayList();
+    //private ObservableList<TableList> localTableList = FXCollections.observableArrayList();
+    @FXML
+    private TableColumn<TableList, String> localFileName, localFileType, localFileSize;
+    @FXML
+    private TableColumn<TableList, String> serverFileName, serverFileType, serverFileSize;
+    public TextArea localPath;
+    public Button buttonDownload;
     private Path rootDir;
-    private Path currentDir;
     private Network network;
     @FXML
     public TextField textStatus;
     @FXML
-    public ListView<String> listviewLocal;
-    @FXML
-    public ListView<String> listviewServer;
-    @FXML
     public Button buttonUpload;
-    @FXML
-    public TextField textUser;
-    @FXML
-    public PasswordField textPassword;
     @FXML
     public Button buttonLocalStorage;
     @FXML
-    public Label labelLocalPath;
-    @FXML
-    public Button buttonServerStorage;
-    @FXML
-    public Label labelServerPath;
-    @FXML
     public Button buttonConnect;
-    @FXML
-    public Button buttonDownload;
 
-    // connect to cloud from user & pwd
-    public void connectToServer(ActionEvent actionEvent) throws IOException {
-        String user = textUser.getText();
-        String pwd = textPassword.getText();
-        // connect to Cloud
-        if (network.connectCloud(user, pwd)) {
-            textUser.setDisable(true);
-            textPassword.setDisable(true);
-            buttonConnect.setDisable(true);
-            buttonUpload.setDisable(false);
-        }
-        textStatus.setText(network.getStatus());
-    }
-
-    // get list files from local path
-    public void getLocalList() {
-        File dir = new File(labelLocalPath.getText());
-        for (File file : dir.listFiles()) {
-            if (file.isFile())
-                listviewLocal.getItems().add(file.getName());
-        }
-        String[] list = new File(dir.getName()).list();
-        assert list != null;
-        listviewLocal.getItems().clear();
-        listviewLocal.getItems().addAll(Arrays.asList(list));
-    }
-
-    // initialise the class
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         try {
-            network = new Network("localhost", 8181);
             rootDir = Paths.get("").resolve("cloud-client").resolve("localFiles").toAbsolutePath();
-            currentDir = Path.of(rootDir.toString());
-            labelLocalPath.setText(rootDir.normalize().toString());
-            labelServerPath.setText("[root]");
-            listviewLocal.getItems().add("<Empty list>");
-            listviewServer.getItems().add("<Empty list>");
-            buttonDownload.setDisable(true);
-            buttonUpload.setDisable(true);
-            getLocalList();
+            localPath.setText(rootDir.normalize().toString());
+            localFileName.setCellValueFactory(new PropertyValueFactory<>("name"));
+            localFileType.setCellValueFactory(new PropertyValueFactory<>("type"));
+            localFileSize.setCellValueFactory(new PropertyValueFactory<>("size"));
+            serverFileName.setCellValueFactory(new PropertyValueFactory<>("name"));
+            serverFileType.setCellValueFactory(new PropertyValueFactory<>("type"));
+            serverFileSize.setCellValueFactory(new PropertyValueFactory<>("size"));
+            getLocalList(true);
+            network = new Network("localhost", 8189);
             Thread thread = new Thread(this::listenCloudServer);
             thread.setDaemon(true);
             thread.start();
+
         } catch (Exception e) {
             textStatus.setText(e.getMessage());
+        }
+    }
+
+    public void connectToServer() {
+        // Create the custom dialog.
+        Dialog<Pair<String, String>> dialog = new Dialog<>();
+        dialog.setTitle("Connect to Cloud");
+        dialog.setHeaderText(null);
+        // Set the button types.
+        ButtonType loginButtonType = new ButtonType("Login", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(loginButtonType, ButtonType.CANCEL);
+        // Create the username and password labels and fields.
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 10, 10, 10));
+        TextField username = new TextField();
+        username.setPromptText("Username");
+        username.setText("User1");
+        PasswordField password = new PasswordField();
+        password.setPromptText("Password");
+        password.setText("pwd");
+        grid.add(new Label("Username:"), 0, 0);
+        grid.add(username, 1, 0);
+        grid.add(new Label("Password:"), 0, 1);
+        grid.add(password, 1, 1);
+        // Enable/Disable login button depending on whether a username was entered.
+        Node loginButton = dialog.getDialogPane().lookupButton(loginButtonType);
+        loginButton.setDisable(true);
+        // Do some validation (using the Java 8 lambda syntax).
+        username.textProperty().addListener((observable, oldValue, newValue) -> loginButton.setDisable(newValue.trim().isEmpty()));
+        dialog.getDialogPane().setContent(grid);
+        // Request focus on the username field by default.
+        Platform.runLater(username::requestFocus);
+        // Convert the result to a username-password-pair when the login button is clicked.
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == loginButtonType) {
+                return new Pair<>(username.getText(), password.getText());
+            }
+            return null;
+        });
+        Optional<Pair<String, String>> result = dialog.showAndWait();
+        result.ifPresent(usernamePassword -> {
+            user = usernamePassword.getKey();
+            pwd = usernamePassword.getValue();
+            try {
+                network.write(new AuthRequest(user, pwd));
+            } catch (Exception e) {
+                showError(e.getMessage(), Arrays.toString(e.getStackTrace()));
+            }
+        });
+    }
+
+    // get list files from local path
+    public void getLocalList(boolean isRoot) {
+        ObservableList<TableList> slist = localTable.getItems();
+        slist.clear();
+        File dir = new File(localPath.getText());
+        if (!isRoot) slist.add(new TableList("..", "upDir", 0L));
+        for (File file : Objects.requireNonNull(dir.listFiles())) {
+            if (file.isDirectory()) {
+                slist.add(new TableList(file.getName(), "dir", 0L));
+            } else {
+                slist.add(new TableList(file.getName(), "file", file.length()));
+            }
         }
     }
 
@@ -100,60 +157,308 @@ public class CloudClientController implements Initializable {
         try {
             while (true) {
                 CloudMessage message = network.read();
-                if (message instanceof ListFiles listFiles) {
-                    listviewServer.getItems().clear();
-                    listviewServer.getItems().addAll(listFiles.getFiles());
+                if (message instanceof ServerListFiles serverListFiles) {
+                    ObservableList<TableList> serverList = serverTable.getItems();
+                    serverList.clear();
+                    serverList.addAll(serverListFiles.getFiles());
                 } else if (message instanceof FileMessage fileMessage) {
-                    Path current = Path.of(labelLocalPath.getText()).resolve(fileMessage.getName());
+                    Path current = Path.of(localPath.getText()).resolve(fileMessage.getName()).toAbsolutePath();
                     Files.write(current, fileMessage.getData());
-                    getLocalList();
+                    getLocalList(rootDir.toString().equals(localPath.getText()));
+                } else if (message instanceof AuthResponse authResponse) {
+                    userID = authResponse.getUserID();
+                    if (userID.startsWith("OK ")) {
+                        String[] arr = userID.split(" ");
+                        userID = arr[1];
+                        ObservableList<TableList> serverList = serverTable.getItems();
+                        serverList.clear();
+                        serverList.addAll(authResponse.getFiles());
+                        buttonConnect.setDisable(true);
+                        buttonRegister.setDisable(true);
+                        buttonUpload.setDisable(false);
+                        buttonDownload.setDisable(false);
+                        buttonMakeDir.setDisable(false);
+                        buttonRenameDir.setDisable(false);
+                    } else if (userID.equals("WRONG_PWD")) {
+                        Platform.runLater(() -> infoDialog("Wrong user password"));
+                    } else {
+                        Platform.runLater(() -> {
+                            if (showYesNoDialog("This user not registered, press register ...")) {
+                                try {
+                                    network.write(new RegisterRequest(user, pwd));
+                                } catch (IOException e) {
+                                    showException(e.getMessage(), Arrays.toString(e.getStackTrace()));
+                                }
+                            }
+                        });
+                    }
+                } else if (message instanceof ErrorMessage errorMessage) {
+                    Platform.runLater(() -> showError(errorMessage.getMessage(), errorMessage.getStackTrace()));
+                } else if (message instanceof RegisterResponse registerResponse) {
+                    userID = registerResponse.getUserID();
+                    if (userID.startsWith("OK ")) {
+                        String[] arr = userID.split(" ");
+                        userID = arr[1];
+                        ObservableList<TableList> serverList = serverTable.getItems();
+                        serverList.clear();
+                        serverList.addAll(registerResponse.getFiles());
+                        buttonConnect.setDisable(true);
+                        buttonRegister.setDisable(true);
+                        buttonUpload.setDisable(false);
+                        buttonDownload.setDisable(false);
+                        buttonMakeDir.setDisable(false);
+                        buttonRenameDir.setDisable(false);
+                    }
                 }
             }
         } catch (Exception e) {
-            System.err.println("Connection lost");
+            Platform.runLater(() -> showException(e.getMessage(), Arrays.toString(e.getStackTrace())));
         }
     }
 
-    // upload text file
-    public void uploadFile() throws IOException {
-        String fileName = listviewLocal.getSelectionModel().getSelectedItem();
-        network.write(new FileMessage(Path.of(labelLocalPath.getText()).resolve(fileName)));
-    }
-
-    public void downloadFile() throws IOException {
-        String fileName = listviewServer.getSelectionModel().getSelectedItem();
-        network.write(new FileRequest(fileName));
-    }
-
-    public void mouseLocalViewClick(MouseEvent mouseEvent) throws IOException {
-        if (mouseEvent.getClickCount() == 2) {
-            String fileName = listviewServer.getSelectionModel().getSelectedItem();
-            if (fileName.equals("..")) {
-                currentDir = Path.of(currentDir.toString()).getParent();
-                listviewLocal.getItems().clear();
-                if (rootDir.toString().equals(currentDir.toString())) {
-                    listviewLocal.getItems().addAll(new ListFiles(currentDir, true).getFiles());
+    public void uploadFile() {
+        try {
+            TableList tl = localTable.getSelectionModel().getSelectedItem();
+            if (tl == null) {
+                infoDialog("Select file in Local list.");
+            } else {
+                String type = tl.getType();
+                String fileName = tl.getName();
+                if (type.equals("file")) {
+                    network.write(new FileMessage(userID, Path.of(localPath.getText()).resolve(fileName)));
                 } else {
-                    listviewLocal.getItems().addAll(new ListFiles(currentDir, false).getFiles());
+                    infoDialog("Select the file.");
                 }
+            }
+        } catch (IOException e) {
+            showException(e.getMessage(), Arrays.toString(e.getStackTrace()));
+        }
+    }
+
+    public void downloadFile() {
+        try {
+            TableList tl = serverTable.getSelectionModel().getSelectedItem();
+            if (tl == null) {
+                infoDialog("Select file in Server list.");
             } else {
-                currentDir = Path.of(currentDir.toString()).getParent();
-                listviewLocal.getItems().clear();
-                listviewLocal.getItems().addAll(new ListFiles(currentDir, false).getFiles());
+                String type = tl.getType();
+                String fileName = tl.getName();
+                if (type.equals("file")) {
+                    network.write(new FileRequest(userID, fileName));
+                } else {
+                    infoDialog("Select the file.");
+                }
+            }
+        } catch (IOException e) {
+            showException(e.getMessage(), Arrays.toString(e.getStackTrace()));
+        }
+    }
+
+    public void clickServerList(MouseEvent mouseEvent) throws IOException {
+        if (mouseEvent.getClickCount() == 2) {
+            TableList tl = serverTable.getSelectionModel().getSelectedItem();
+            if (tl == null) {
+                return;
+            }
+            String fileName = serverTable.getSelectionModel().getSelectedItem().getName();
+            String fileType = serverTable.getSelectionModel().getSelectedItem().getType();
+            if (fileName.equals("..")) {
+                network.write(new PathUpRequest(userID));
+            } else if (fileType.equals("dir")) {
+                network.write(new PathInRequest(userID, fileName));
             }
         }
     }
 
-    public void mouseServerViewClick(MouseEvent mouseEvent) throws IOException {
+    public void clickLocalList(MouseEvent mouseEvent) {
+        Path currentDir = Path.of(localPath.getText());
+        TableList tl = localTable.getSelectionModel().getSelectedItem();
+        if (tl == null) {
+            return;
+        }
+        String fileName = localTable.getSelectionModel().getSelectedItem().getName();
+        String fileType = localTable.getSelectionModel().getSelectedItem().getType();
         if (mouseEvent.getClickCount() == 2) {
-            String fileName = listviewServer.getSelectionModel().getSelectedItem();
             if (fileName.equals("..")) {
-                network.write(new PathUpRequest());
-            } else {
-                Path inPath = Path.of(labelServerPath.getText()).resolve(fileName);
-                network.write(new PathInRequest(inPath.toString()));
-                labelServerPath.setText(labelServerPath.getText() + "\\" + fileName);
+                currentDir = Path.of(localPath.getText()).getParent();
+                localPath.setText(currentDir.toString());
+                getLocalList(rootDir.toString().equals(currentDir.toString()));
+            } else if (fileType.equals("dir")) {
+                currentDir = Path.of(currentDir.toString()).resolve(fileName);
+                localPath.setText(currentDir.toString());
+                getLocalList(false);
             }
         }
+    }
+
+    public void selectLocalStorage() {
+        final DirectoryChooser directoryChooser = new DirectoryChooser();
+        directoryChooser.setTitle("Select Directory");
+        directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+        Stage stage = (Stage) ap.getScene().getWindow();
+        File dir = directoryChooser.showDialog(stage);
+        if (dir != null) {
+            Path currentDir = Path.of(dir.getAbsolutePath()).getParent();
+            localPath.setText(dir.getAbsolutePath());
+            if (currentDir == null) {
+                rootDir = Path.of(dir.toString()).toAbsolutePath();
+                getLocalList(true);
+            } else {
+                getLocalList(false);
+            }
+        }
+    }
+
+    public void showError(String errorMessage, String stackTrace) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Ошибка");
+        alert.setHeaderText(errorMessage);
+        alert.setContentText(stackTrace);
+        alert.showAndWait();
+    }
+
+    public boolean showYesNoDialog(String question) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Confirmation Dialog");
+        alert.setHeaderText(null);
+        alert.setContentText(question);
+        ButtonType buttonTypeYes = new ButtonType("YES");
+        ButtonType buttonTypeNo = new ButtonType("NO");
+        alert.getButtonTypes().setAll(buttonTypeYes, buttonTypeNo);
+        Optional<ButtonType> result = alert.showAndWait();
+        return result.get() == buttonTypeYes;
+    }
+
+    public void showException(String errorMessage, String stackTrace) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Exception info");
+        alert.setHeaderText(errorMessage);
+        alert.setContentText(null);
+        Label label = new Label("The exception stacktrace was:");
+        TextArea textArea = new TextArea(stackTrace);
+        textArea.setEditable(false);
+        textArea.setWrapText(true);
+        textArea.setMaxWidth(Double.MAX_VALUE);
+        textArea.setMaxHeight(Double.MAX_VALUE);
+        GridPane.setVgrow(textArea, Priority.ALWAYS);
+        GridPane.setHgrow(textArea, Priority.ALWAYS);
+        GridPane expContent = new GridPane();
+        expContent.setMaxWidth(Double.MAX_VALUE);
+        expContent.add(label, 0, 0);
+        expContent.add(textArea, 0, 1);
+        alert.getDialogPane().setExpandableContent(expContent);
+        alert.showAndWait();
+    }
+
+    public void makeServerDir() {
+        TextInputDialog dialog = new TextInputDialog("");
+        dialog.setTitle("Server DirName Input Dialog");
+        dialog.setHeaderText("Input server dir name");
+        dialog.setContentText("Enter name:");
+        // Traditional way to get the response value.
+        Optional<String> result = dialog.showAndWait();
+        try {
+            if (result.isPresent()) {
+                network.write(new ServerDirMake(userID, result.get()));
+            }
+        } catch (IOException e) {
+            showError(e.getMessage(), Arrays.toString(e.getStackTrace()));
+        }
+    }
+
+    public void renameServerDir() {
+        TableList tl = serverTable.getSelectionModel().getSelectedItem();
+        if (tl == null) {
+            infoDialog("Select directory in Server list.");
+        } else {
+            String type = tl.getType();
+            String dirToName = tl.getName();
+            if (type.equals("dir")) {
+                TextInputDialog dialog = new TextInputDialog("walter");
+                dialog.setTitle("Text Input Dialog");
+                dialog.setHeaderText("Input server dir name for rename");
+                dialog.setContentText("Enter name:");
+                // Traditional way to get the response value.
+                Optional<String> result = dialog.showAndWait();
+                try {
+                    if (result.isPresent()) {
+                        network.write(new ServerDirRename(userID, dirToName, result.get()));
+                    }
+                } catch (IOException e) {
+                    showError(e.getMessage(), Arrays.toString(e.getStackTrace()));
+                }
+            }
+        }
+    }
+
+    public void infoDialog(String infoString) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Information");
+        alert.setHeaderText(null);
+        alert.setContentText(infoString);
+        alert.showAndWait();
+        alert.close();
+    }
+
+    public void renameServerFile() {
+
+    }
+
+    public void deleteServerDir() {
+
+    }
+
+    public void deleteServerFile() {
+
+    }
+
+    public void registerUser() {
+        // Create the custom dialog.
+        Dialog<Pair<String, String>> dialogReg = new Dialog<>();
+        dialogReg.setTitle("Connect to Cloud");
+        dialogReg.setHeaderText(null);
+        // Set the button types.
+        ButtonType loginButtonType = new ButtonType("Login", ButtonBar.ButtonData.OK_DONE);
+        dialogReg.getDialogPane().getButtonTypes().addAll(loginButtonType, ButtonType.CANCEL);
+        // Create the username and password labels and fields.
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 10, 10, 10));
+        TextField username = new TextField();
+        username.setPromptText("Username");
+        username.setText("User1");
+        PasswordField password = new PasswordField();
+        password.setPromptText("Password");
+        password.setText("pwd");
+        grid.add(new Label("Username:"), 0, 0);
+        grid.add(username, 1, 0);
+        grid.add(new Label("Password:"), 0, 1);
+        grid.add(password, 1, 1);
+        // Enable/Disable login button depending on whether a username was entered.
+        Node loginButton = dialogReg.getDialogPane().lookupButton(loginButtonType);
+        loginButton.setDisable(true);
+        // Do some validation (using the Java 8 lambda syntax).
+        username.textProperty().addListener((observable, oldValue, newValue) -> loginButton.setDisable(newValue.trim().isEmpty()));
+        dialogReg.getDialogPane().setContent(grid);
+        // Request focus on the username field by default.
+        Platform.runLater(username::requestFocus);
+        // Convert the result to a username-password-pair when the login button is clicked.
+        dialogReg.setResultConverter(dialogButton -> {
+            if (dialogButton == loginButtonType) {
+                return new Pair<>(username.getText(), password.getText());
+            }
+            return null;
+        });
+        Optional<Pair<String, String>> resultReg = dialogReg.showAndWait();
+        resultReg.ifPresent(usernamePassword -> {
+            user = usernamePassword.getKey();
+            pwd = usernamePassword.getValue();
+            try {
+                network.write(new RegisterRequest(user, pwd));
+            } catch (IOException e) {
+                showException(e.getMessage(), Arrays.toString(e.getStackTrace()));
+            }
+        });
     }
 }
