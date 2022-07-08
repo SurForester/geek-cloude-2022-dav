@@ -19,10 +19,11 @@ public class CloudFileHandler extends SimpleChannelInboundHandler<CloudMessage> 
         }
     }
 
-     @Override
+    @Override
     protected void channelRead0(ChannelHandlerContext ctx, CloudMessage cloudMessage) throws Exception {
         if (cloudMessage instanceof FileRequest fileRequest) {
-            ctx.writeAndFlush(dbConnect.getFile(fileRequest.getName(), fileRequest.getUserID()));
+            FileMessage fileMessage = dbConnect.getFile(fileRequest.getName(), fileRequest.getUserID());
+            ctx.writeAndFlush(fileMessage);
         } else if (cloudMessage instanceof FileMessage fileMessage) {
             String res = dbConnect.writeFile(fileMessage);
             if (res.equals("OK")) {
@@ -33,7 +34,7 @@ public class CloudFileHandler extends SimpleChannelInboundHandler<CloudMessage> 
             }
         } else if (cloudMessage instanceof PathInRequest pathInRequest) {
             // path in
-            String res =  dbConnect.pathIn(pathInRequest.getUserID(), pathInRequest.getPath());
+            String res = dbConnect.pathIn(pathInRequest.getUserID(), pathInRequest.getPath());
             if (res.equals("OK")) {
                 ctx.writeAndFlush(new ServerListFiles(dbConnect.getServerList(pathInRequest.getUserID())));
             } else {
@@ -51,9 +52,32 @@ public class CloudFileHandler extends SimpleChannelInboundHandler<CloudMessage> 
             String userid = dbConnect.userLogin(authRequest.getLogin(), authRequest.getPwd());
             if (userid.startsWith("OK ")) {
                 String[] arr = userid.split(" ");
-                ctx.writeAndFlush(new AuthResponse(arr[1], dbConnect.getServerList(arr[1])));
+                ctx.writeAndFlush(new AuthResponse(userid, dbConnect.getServerList(arr[1])));
+            } else if (userid.equals("NO_USER") || userid.equals("WRONG_PWD")) {
+                ctx.writeAndFlush(new AuthResponse(userid, dbConnect.getServerList("0")));
             } else {
                 ctx.writeAndFlush(new ErrorMessage("Error login.", userid));
+            }
+        } else if (cloudMessage instanceof RegisterRequest registerRequest) {
+            String userid = dbConnect.userRegister(registerRequest.getLogin(), registerRequest.getPwd());
+            if (userid.startsWith("OK ")) {
+                String[] arr = userid.split(" ");
+                ctx.writeAndFlush(new RegisterResponse(userid, dbConnect.getServerList(arr[1])));
+            }
+        } else if (cloudMessage instanceof ServerDirMake serverDirMake) {
+            String res = dbConnect.makeDirectory(serverDirMake.getUserID(), serverDirMake.getNameDir());
+            if (res.equals("OK")) {
+                ctx.writeAndFlush(new ServerListFiles(dbConnect.getServerList(serverDirMake.getUserID())));
+            } else {
+                ctx.writeAndFlush(new ErrorMessage("Error make dir - " + serverDirMake.getNameDir(), res));
+            }
+        } else if (cloudMessage instanceof ServerDirRename serverDirRename) {
+            String res = dbConnect.renameDirectory(serverDirRename.getUserID(),
+                    serverDirRename.getFromName(), serverDirRename.getToName());
+            if (res.equals("OK")) {
+                ctx.writeAndFlush(new ServerListFiles(dbConnect.getServerList(serverDirRename.getUserID())));
+            } else {
+                ctx.writeAndFlush(new ErrorMessage("Ошибка команды pathUp", res));
             }
         }
     }

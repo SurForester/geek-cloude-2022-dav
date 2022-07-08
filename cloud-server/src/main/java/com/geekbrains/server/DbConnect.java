@@ -14,9 +14,8 @@ import java.util.List;
 @Slf4j
 public class DbConnect {
 
-    // временное решение, до реализации регистрации
-    //private final String currUser = "User1";
-    private final String connectionString = "jdbc:sqlite:cloud-server\\cloud-db.db";
+    private final String connectionString = "jdbc:sqlite:cloud-server" + System.getProperty("file.separator") + "cloud-db.db";
+    private final String filesPath = "cloud-server" + System.getProperty("file.separator") + "cloudFiles";
     private Connection connection = null;
     private Statement statement = null;
 
@@ -36,7 +35,7 @@ public class DbConnect {
         }
     }
 
-    public void reconnectDB() {
+    /*public void reconnectDB() {
         try {
             if (statement != null) {
                 statement.close();
@@ -49,10 +48,13 @@ public class DbConnect {
         } catch (SQLException e) {
             log.error(e.getMessage());
         }
-    }
+    }*/
 
     public List<TableList> getServerList(String userId) throws SQLException {
         List<TableList> files = new ArrayList<>();
+        if (userId.equals("0")) {
+            return files;
+        }
         String sql = "select id from directories where user_id = " + userId + " and parent_id is null";
         ResultSet resultSet = statement.executeQuery(sql);
         long rootDir = 0;
@@ -119,11 +121,15 @@ public class DbConnect {
     }
 
     public FileMessage getFile(String name, String userID) throws IOException, SQLException {
-        ResultSet resultSet = statement.executeQuery("select id from files where dir_id = " +
-                "(select curr_dir from users where id = '" + userID + "') and " +
-                "name = '" + name + "'");
-        FileMessage file = new FileMessage(userID, Path.of("server_files")
-                .resolve(resultSet.getLong(1) + ".file"));
+        /*String sql = "select id from files where dir_id = " +
+                "(select curr_dir from users where id = " + userID + ") and " +
+                "name = '" + name + "'";
+        ResultSet resultSet = statement.executeQuery(sql);
+        long fn = 0;
+        while (resultSet.next()) {
+            fn = resultSet.getLong("1");
+        }*/
+        FileMessage file = new FileMessage(userID, Path.of(filesPath).resolve("1.file"));
         file.setName(name);
         return file;
     }
@@ -137,7 +143,7 @@ public class DbConnect {
                 currDir = resultSet.getLong("curr_dir");
             }
             if (currDir > 0) {
-                sql = "insert into files(dir_id, name, shared) values (" +
+                sql = "insert into files(dir_id, name, is_shared) values (" +
                         currDir + ", '" + fileMessage.getName() + "', 0)";
                 statement.executeUpdate(sql);
                 sql = "select id from files where dir_id = " + currDir + " and name = '" +
@@ -147,7 +153,7 @@ public class DbConnect {
                 while (resultSet.next()) {
                     fileNum = resultSet.getLong(1);
                 }
-                Files.write(Path.of("server_files").resolve(fileNum + ".file"), fileMessage.getData());
+                Files.write(Path.of(filesPath).resolve(fileNum + ".file").toAbsolutePath(), fileMessage.getData());
             } else {
                 return "NO_CURR_DIR";
             }
@@ -182,8 +188,98 @@ public class DbConnect {
     }
 
     public String userRegister(String user, String pwd) {
-        return "OK";
+        try {
+            long userID = 0;
+            // register user
+            int res = statement.executeUpdate(
+                    "insert into users values(null, '" + user + "', '" + pwd + "', null)");
+            if (res > 0) {
+                // inserting is OK
+                ResultSet rs = statement.executeQuery(
+                        "select id from users where login = '" + user + "'");
+                while (rs.next()) {
+                    userID = rs.getLong("ID");
+                }
+                if (userID > 0) {
+                    // user is registered, register base dir for new user
+                    long startDir = 0;
+                    res = statement.executeUpdate(
+                            "insert into directories values(null, " + userID + ", 'root', null)");
+                    if (res > 0) {
+                        // inserting base dir is OK
+                        String sql = "select id from directories where user_id = " + userID +
+                                " and parent_id is null";
+                        rs = statement.executeQuery(sql);
+                        while (rs.next()) {
+                            startDir = rs.getLong(1);
+                        }
+                        res = statement.executeUpdate(
+                                "update users set curr_dir = " + startDir + " where id = " + userID);
+                        if (res > 0) {
+                            return "OK " + userID;
+                        } else {
+                            return "Base dir did not setted to new user.";
+                        }
+                    } else {
+                        return "Base dir not created.";
+                    }
+                } else {
+                    return "User ID can't get.";
+                }
+            } else {
+                return "New user not inserted into DB.";
+            }
+        } catch (SQLException e) {
+            return e.getMessage();
+        }
     }
+
+    public String makeDirectory(String userID, String name) {
+        try {
+            ResultSet rs = statement.executeQuery("Select curr_dir from users where id = " + userID);
+            long curr_dir = 0;
+            while (rs.next()) {
+                curr_dir = rs.getLong(1);
+            }
+            int ins = statement.executeUpdate(
+                    "insert into directories values(null, " + userID + ", '" + name + "', " + curr_dir + ")");
+            if (ins == 1) {
+                return "OK";
+            } else {
+                return "not OK";
+            }
+        } catch (SQLException e) {
+            return e.getMessage();
+        }
+    }
+
+    public String renameDirectory(String userID, String fromName, String toName) {
+        try {
+            ResultSet rs = statement.executeQuery("Select curr_dir from users where id = " + userID);
+            long curr_dir = 0;
+            while (rs.next()) {
+                curr_dir = rs.getLong(1);
+            }
+            String sql = "update directories set name = '" + toName +
+                    "' where user_id = " + userID + " and name = '" + fromName +
+                    "' and parent_id = " + curr_dir;
+            if (statement.executeUpdate(sql) == 1) {
+                return "OK";
+            } else {
+                return "not OK";
+            }
+        } catch (SQLException e) {
+            return e.getMessage();
+        }
+    }
+
+    /*public String deleteFile(String userID, String fileName) {
+        try {
+            return "OK";
+        } catch (SQLException e) {
+            return e.getMessage();
+        }
+    }*/
 
     public void closeDatabase() {
         try {
