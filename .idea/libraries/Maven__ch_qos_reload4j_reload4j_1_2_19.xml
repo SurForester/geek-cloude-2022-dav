@@ -1,0 +1,14 @@
+<component name="libraryTable">
+  <library name="Maven: ch.qos.reload4j:reload4j:1.2.19">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/ch/qos/reload4j/reload4j/1.2.19/reload4j-1.2.19.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/ch/qos/reload4j/reload4j/1.2.19/reload4j-1.2.19-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/ch/qos/reload4j/reload4j/1.2.19/reload4j-1.2.19-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/cloud-server/sqlite-jdbc-3.5.7.jar!/" />
+    </SOURCES>
+  </library>
+</component>

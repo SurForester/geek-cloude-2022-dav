@@ -3,41 +3,44 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.ListView?>
-<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
 
-<VBox alignment="CENTER" prefHeight="545.0" prefWidth="693.0" spacing="20.0" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geekbrains.cloud.client.CloudClientController">
+<VBox alignment="CENTER" prefHeight="601.0" prefWidth="760.0" spacing="20.0" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geekbrains.cloud.client.CloudClientController">
     <padding>
         <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
     </padding>
-    <AnchorPane prefHeight="545.0" prefWidth="683.0">
-        <TextField fx:id="textStatus" editable="false" layoutX="1.0" layoutY="509.0" prefHeight="25.0" prefWidth="681.0" />
-        <ListView fx:id="listviewLocal" layoutX="1.0" layoutY="92.0" onMouseClicked="#mouseLocalViewClick" prefHeight="416.0" prefWidth="314.0" />
-        <ListView fx:id="listviewServer" layoutX="368.0" layoutY="92.0" onMouseClicked="#mouseServerViewClick" prefHeight="416.0" prefWidth="314.0" />
-        <Button fx:id="buttonUpload" layoutX="324.0" layoutY="199.0" mnemonicParsing="false" onAction="#uploadFile" prefHeight="25.0" prefWidth="36.0" text="&gt;&gt;" />
-        <Label layoutX="6.0" layoutY="6.0" text="User name:">
-            <font>
-                <Font size="14.0" />
-            </font>
-        </Label>
-        <TextField fx:id="textUser" layoutX="85.0" layoutY="4.0" prefHeight="25.0" prefWidth="187.0" promptText="Input user name" text="user1" />
-        <Label layoutX="299.0" layoutY="7.0" text="Password">
-            <font>
-                <Font size="14.0" />
-            </font>
-        </Label>
-        <PasswordField fx:id="textPassword" layoutX="368.0" layoutY="4.0" prefHeight="25.0" prefWidth="193.0" promptText="Input password" text="pwd" />
-        <Label layoutX="6.0" layoutY="41.0" text="Local storage" />
-        <Label fx:id="labelLocalPath" layoutX="1.0" layoutY="58.0" prefHeight="25.0" prefWidth="314.0" text="Label" />
-        <Button fx:id="buttonLocalStorage" layoutX="85.0" layoutY="37.0" mnemonicParsing="false" text="..." />
-        <Label layoutX="368.0" layoutY="41.0" text="Server storage" />
-        <Label fx:id="labelServerPath" layoutX="368.0" layoutY="66.0" prefHeight="25.0" prefWidth="314.0" text="Label" />
-        <Button fx:id="buttonServerStorage" layoutX="452.0" layoutY="37.0" mnemonicParsing="false" text="..." />
-        <Button fx:id="buttonConnect" layoutX="582.0" layoutY="5.0" mnemonicParsing="false" onAction="#connectToServer" text="Connect" />
-        <Button fx:id="buttonDownload" layoutX="323.0" layoutY="253.0" mnemonicParsing="false" onAction="#downloadFile" prefHeight="25.0" prefWidth="36.0" text="&lt;&lt;" />
+    <AnchorPane fx:id="ap" prefHeight="591.0" prefWidth="754.0">
+        <TextField fx:id="textStatus" editable="false" layoutY="565.0" prefHeight="25.0" prefWidth="744.0" />
+        <Button fx:id="buttonUpload" disable="true" layoutX="353.0" layoutY="179.0" mnemonicParsing="false" onAction="#uploadFile" prefHeight="25.0" prefWidth="36.0" text="&gt;&gt;" />
+        <Button fx:id="buttonLocalStorage" layoutX="2.0" layoutY="3.0" mnemonicParsing="false" onAction="#selectLocalStorage" prefHeight="60.0" prefWidth="24.0" text="..." />
+        <Button fx:id="buttonConnect" layoutX="392.0" layoutY="2.0" mnemonicParsing="false" onAction="#connectToServer" prefHeight="17.0" prefWidth="133.0" text="Connect to server" />
+        <Button fx:id="buttonDownload" disable="true" layoutX="353.0" layoutY="238.0" mnemonicParsing="false" onAction="#downloadFile" prefHeight="25.0" prefWidth="36.0" text="&lt;&lt;" />
+        <TextArea fx:id="localPath" editable="false" layoutX="30.0" layoutY="3.0" prefHeight="60.0" prefWidth="320.0" wrapText="true" />
+        <TableView fx:id="serverTable" editable="true" layoutX="392.0" layoutY="93.0" onMouseClicked="#clickServerList" prefHeight="469.0" prefWidth="352.0">
+            <columns>
+                <TableColumn id="name" fx:id="serverFileName" editable="false" prefWidth="211.0" text="Name (server)" />
+                <TableColumn id="type" fx:id="serverFileType" editable="false" prefWidth="36.0" text="Type" />
+                <TableColumn id="size" fx:id="serverFileSize" editable="false" text="Size (byte)" />
+            </columns>
+        </TableView>
+        <TableView fx:id="localTable" editable="true" layoutX="3.0" layoutY="67.0" onMouseClicked="#clickLocalList" prefHeight="495.0" prefWidth="346.0">
+            <columns>
+                <TableColumn id="name" fx:id="localFileName" editable="false" prefWidth="211.0" text="Name (local)" />
+                <TableColumn id="type" fx:id="localFileType" editable="false" prefWidth="36.0" text="Type" />
+                <TableColumn id="size" fx:id="localFileSize" editable="false" text="Size (byte)" />
+            </columns>
+        </TableView>
+      <Button fx:id="buttonMakeDir" disable="true" layoutX="392.0" layoutY="33.0" mnemonicParsing="false" onAction="#makeServerDir" text="Mk DIR" />
+      <Button fx:id="buttonRenameDir" disable="true" layoutX="458.0" layoutY="33.0" mnemonicParsing="false" onAction="#renameServerDir" text="Ren DIR" />
+      <Button fx:id="buttonRenameFile" disable="true" layoutX="613.0" layoutY="33.0" mnemonicParsing="false" onAction="#renameServerFile" text="Ren FILE" />
+      <Button fx:id="buttonDeleteDir" disable="true" layoutX="527.0" layoutY="33.0" mnemonicParsing="false" onAction="#deleteServerDir" text="Del DIR" />
+      <Button fx:id="buttonDeleteFile" disable="true" layoutX="686.0" layoutY="33.0" mnemonicParsing="false" onAction="#deleteServerFile" text="del FILE" />
+      <Button fx:id="buttonRegister" layoutX="542.0" layoutY="2.0" mnemonicParsing="false" onAction="#registerUser" prefHeight="25.0" prefWidth="202.0" text="RegisterNewUser" />
+      <Label fx:id="labelServerPath" layoutX="392.0" layoutY="61.0" prefHeight="31.0" prefWidth="352.0" text="[no connect to server]" wrapText="true" />
     </AnchorPane>
 </VBox>

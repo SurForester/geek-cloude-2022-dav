@@ -13,8 +13,6 @@ public class Network {
 
     private String server;
     private int port;
-    private String resultString = "";
-    private boolean serverConnected;
     private ObjectDecoderInputStream is;
     private ObjectEncoderOutputStream os;
 
@@ -26,31 +24,6 @@ public class Network {
         is = new ObjectDecoderInputStream(socket.getInputStream());
     }
 
-    // identify user in cloud
-    public boolean connectCloud(String user, String pwd) {
-        resultString = "<logged> ...";
-        return true;
-        /*try {
-            // send request
-            sendMessage("<Login> " + user + " " + pwd);
-            // gets respond
-            String res = readMessage();
-            String[] arr = res.split(" ");
-            if (arr[1].equals("email:")) { // if respond content "email:"
-                return true;
-            } else {
-                resultString = res;
-            }
-        } catch (Exception e) {
-            resultString = e.getMessage();
-        }
-        return false;*/
-    }
-
-    public String getStatus() {
-        return resultString;
-    }
-
     public CloudMessage read() throws IOException, ClassNotFoundException {
         return (CloudMessage) is.readObject();
     }
@@ -60,7 +33,4 @@ public class Network {
         os.flush();
     }
 
-    public boolean isServerConnected() {
-        return serverConnected;
-    }
 }
