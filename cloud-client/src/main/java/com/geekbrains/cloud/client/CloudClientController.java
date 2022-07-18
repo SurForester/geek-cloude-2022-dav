@@ -41,6 +41,8 @@ public class CloudClientController implements Initializable {
     public Button buttonDeleteFile;
     @FXML
     public Button buttonRegister;
+    @FXML
+    public Label labelServerPath;
     private String user, pwd;
     public AnchorPane ap;
     private String userID;
@@ -161,6 +163,8 @@ public class CloudClientController implements Initializable {
                     ObservableList<TableList> serverList = serverTable.getItems();
                     serverList.clear();
                     serverList.addAll(serverListFiles.getFiles());
+                } else if (message instanceof ServerPathResponse serverPathResponse) {
+                    Platform.runLater(() -> labelServerPath.setText(serverPathResponse.getPathString()));
                 } else if (message instanceof FileMessage fileMessage) {
                     Path current = Path.of(localPath.getText()).resolve(fileMessage.getName()).toAbsolutePath();
                     Files.write(current, fileMessage.getData());
@@ -179,6 +183,8 @@ public class CloudClientController implements Initializable {
                         buttonDownload.setDisable(false);
                         buttonMakeDir.setDisable(false);
                         buttonRenameDir.setDisable(false);
+                        buttonRenameFile.setDisable(false);
+                        buttonDeleteFile.setDisable(false);
                     } else if (userID.equals("WRONG_PWD")) {
                         Platform.runLater(() -> infoDialog("Wrong user password"));
                     } else {
@@ -208,6 +214,18 @@ public class CloudClientController implements Initializable {
                         buttonDownload.setDisable(false);
                         buttonMakeDir.setDisable(false);
                         buttonRenameDir.setDisable(false);
+                        buttonRenameFile.setDisable(false);
+                        buttonDeleteFile.setDisable(false);
+                    }
+                } else if (message instanceof ServerFileRenameResponse serverFileRenameResponse) {
+                    String res = serverFileRenameResponse.getResult();
+                    if (!res.equals("OK")) {
+                        Platform.runLater(() -> showError("Server file renamed successfully.", res));
+                    }
+                } else if (message instanceof ServerFileDeleteResponse serverFileDeleteResponse) {
+                    String res = serverFileDeleteResponse.getResult();
+                    if (!res.equals("OK")) {
+                        Platform.runLater(() -> showError("Server file deleted successfully.", res));
                     }
                 }
             }
@@ -372,21 +390,22 @@ public class CloudClientController implements Initializable {
             infoDialog("Select directory in Server list.");
         } else {
             String type = tl.getType();
-            String dirToName = tl.getName();
             if (type.equals("dir")) {
-                TextInputDialog dialog = new TextInputDialog("walter");
-                dialog.setTitle("Text Input Dialog");
+                TextInputDialog dialog = new TextInputDialog(tl.getName());
+                dialog.setTitle(null);
                 dialog.setHeaderText("Input server dir name for rename");
                 dialog.setContentText("Enter name:");
                 // Traditional way to get the response value.
                 Optional<String> result = dialog.showAndWait();
                 try {
                     if (result.isPresent()) {
-                        network.write(new ServerDirRename(userID, dirToName, result.get()));
+                        network.write(new ServerDirRename(userID, tl.getName(), result.get()));
                     }
                 } catch (IOException e) {
                     showError(e.getMessage(), Arrays.toString(e.getStackTrace()));
                 }
+            } else {
+                infoDialog("Select the directory, please.");
             }
         }
     }
@@ -401,7 +420,29 @@ public class CloudClientController implements Initializable {
     }
 
     public void renameServerFile() {
-
+        TableList tl = serverTable.getSelectionModel().getSelectedItem();
+        if (tl == null) {
+            infoDialog("Select file in Server list.");
+        } else {
+            String type = tl.getType();
+            if (type.equals("file")) {
+                TextInputDialog dialog = new TextInputDialog(tl.getName());
+                dialog.setTitle(null);
+                dialog.setHeaderText("Edit server file name for rename");
+                dialog.setContentText("Edit name:");
+                // Traditional way to get the response value.
+                Optional<String> result = dialog.showAndWait();
+                try {
+                    if (result.isPresent()) {
+                        network.write(new ServerFileRenameRequest(userID, tl.getName(), result.get()));
+                    }
+                } catch (IOException e) {
+                    showError(e.getMessage(), Arrays.toString(e.getStackTrace()));
+                }
+            } else {
+                infoDialog("Select the file, please.");
+            }
+        }
     }
 
     public void deleteServerDir() {
@@ -409,7 +450,26 @@ public class CloudClientController implements Initializable {
     }
 
     public void deleteServerFile() {
-
+        TableList tl = serverTable.getSelectionModel().getSelectedItem();
+        if (tl == null) {
+            infoDialog("Select file in Server list.");
+        } else {
+            String type = tl.getType();
+            if (type.equals("file")) {
+                String q = "Delete file '" + tl.getName() + "' from cloud?";
+                if (!showYesNoDialog(q)) {
+                    // if press NO
+                    return;
+                }
+                try {
+                    network.write(new ServerFileDeleteRequest(userID, tl.getName()));
+                } catch (IOException e) {
+                    showError(e.getMessage(), Arrays.toString(e.getStackTrace()));
+                }
+            } else {
+                infoDialog("Select the file, please.");
+            }
+        }
     }
 
     public void registerUser() {
@@ -461,4 +521,5 @@ public class CloudClientController implements Initializable {
             }
         });
     }
+
 }

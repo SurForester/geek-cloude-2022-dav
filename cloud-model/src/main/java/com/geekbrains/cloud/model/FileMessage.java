@@ -21,7 +21,10 @@ public class FileMessage implements CloudMessage {
         name = path.getFileName().toString();
     }
 
-    public void setName(String name) {
+    public FileMessage(String userID, String name, long size, byte[] data) {
+        this.userID = userID;
+        this.size = size;
+        this.data = data;
         this.name = name;
     }
 
